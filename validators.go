@@ -18,9 +18,9 @@ var (
 	regexAlphaNumeric = regexp.MustCompile("^[a-zA-Z0-9]+$")
 	regexAlphaUnder   = regexp.MustCompile("^[a-zA-Z_]+$")
 	regexAlphaDash    = regexp.MustCompile("^[a-zA-Z-]+$")
-	regexInt          = regexp.MustCompile("^[0-9]+$") //todo -+
-	regexFloat        = regexp.MustCompile("^[0-9]+.[0-9]+$")
-	regexEmail        = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	regexInt          = regexp.MustCompile("^[-+]?[0-9]+$")
+	regexFloat        = regexp.MustCompile("^[0-9]+\\.[0-9]+$")
+	regexEmail        = regexp.MustCompile("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\\])")
 
 	errorWrongType = "Value type not allowed."
 )
@@ -29,6 +29,8 @@ var (
 // Len must zero for String, Array, Slice, Map
 // Value must be not nil for Pointer, Interface
 // Integer, float values must be greater than zero
+// Value kind: String, Array, Slice, Map, Number types, Interface, Pointer
+// It ignore another types
 func Empty(value reflect.Value) error {
 	switch value.Kind() {
 	case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
@@ -51,20 +53,26 @@ func Empty(value reflect.Value) error {
 }
 
 // Value must be a valid email address
+// Value kind: String
+// It panics if another types given
 func Email(value reflect.Value) error {
 	return regexValidator(regexEmail, "email", value)
 }
 
 // Value must be a valid URL address
+// Value kind: String
+// It panics if another types given
 func URL(value reflect.Value) error {
-	_, err := url.ParseRequestURI(value.String())
-	if err != nil {
+	u, err := url.ParseRequestURI(value.String())
+	if err != nil || len(u.Host) == 0 {
 		return errors.New(Messages["url"])
 	}
 	return nil
 }
 
 // Value must be in "yes", "on", "1", "y", "true"
+// Value kind: String
+// It panics if another types given
 func Accepted(value reflect.Value) error {
 	params := []interface{}{"yes", "on", "1", "y", "true"}
 	if err := In(value, params...); err != nil {
@@ -74,6 +82,8 @@ func Accepted(value reflect.Value) error {
 }
 
 // Value must be greater or equal than min
+// Value kind: String, Array, Slice, Map, Number types
+// It panics if another types given
 func Min(value reflect.Value, params ...interface{}) error {
 	min, _ := parseFloat(params[0])
 	val := size(value)
@@ -84,6 +94,8 @@ func Min(value reflect.Value, params ...interface{}) error {
 }
 
 // Value must be less or equal than max
+// Value kind: String, Array, Slice, Map, Number types
+// It panics if another types given
 func Max(value reflect.Value, params ...interface{}) error {
 	max, _ := parseFloat(params[0])
 	val := size(value)
@@ -94,8 +106,8 @@ func Max(value reflect.Value, params ...interface{}) error {
 }
 
 // Value must has specified length
-// Allowed types: String, Slice, Array, Map
-// other types raises panic
+// Value kind: String, Array, Slice, Map
+// It panics if another types given
 func Len(value reflect.Value, params ...interface{}) error {
 	switch value.Kind() {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map:
@@ -110,6 +122,8 @@ func Len(value reflect.Value, params ...interface{}) error {
 }
 
 // Value must be in the specified list
+// Value kind: String, Number types
+// It panics if another types given
 func In(value reflect.Value, params ...interface{}) error {
 	switch value.Kind() {
 	case reflect.String:
@@ -137,6 +151,8 @@ func In(value reflect.Value, params ...interface{}) error {
 }
 
 // Value must not be in specified list
+// Value kind: String, Number types
+// It panics if another types given
 func NotIn(value reflect.Value, params ...interface{}) error {
 	if err := In(value, params...); err == nil {
 		return errorMessage("not_in", params...)
@@ -145,6 +161,8 @@ func NotIn(value reflect.Value, params ...interface{}) error {
 }
 
 // String must be begins with specified string
+// Value kind: String
+// It panics if another types given
 func HasPrefix(value reflect.Value, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return strings.HasPrefix(value.String(), params[0].(string))
@@ -153,6 +171,8 @@ func HasPrefix(value reflect.Value, params ...interface{}) error {
 }
 
 // Value must be ends with specified string
+// Value kind: String
+// It panics if another types given
 func HasSuffix(value reflect.Value, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return strings.HasSuffix(value.String(), params[0].(string))
@@ -204,6 +224,9 @@ func AlphaDash(value reflect.Value) error {
 // It panics if another types given
 func ASCII(value reflect.Value) error {
 	fn := func(value reflect.Value) bool {
+		if value.Len() == 0 {
+			return false
+		}
 		s := value.String()
 		for i := 0; i < len(s); i++ {
 			if s[i] > unicode.MaxASCII {
@@ -215,14 +238,14 @@ func ASCII(value reflect.Value) error {
 	return stringValidator("ascii", value, fn)
 }
 
-// Value must be contains only digits (pattern: ^[0-9]+$).
+// Value must be contains only digits (pattern: ^[-+]?[0-9]+$).
 // Value kind: String
 // It panics if another types given
 func Int(value reflect.Value) error {
 	return regexValidator(regexInt, "int", value)
 }
 
-// Value must be contains only float number (pattern: ^[0-9]+.[0-9]+$).
+// Value must be contains only float number (pattern: ^[0-9]+\.[0-9]+$).
 // Value kind: String
 // It panics if another types given
 func Float(value reflect.Value) error {
@@ -257,7 +280,7 @@ func Ip(value reflect.Value) error {
 func Ipv4(value reflect.Value) error {
 	fn := func(value reflect.Value) bool {
 		ip := net.ParseIP(value.String())
-		return ip != nil && len(ip) == net.IPv4len
+		return ip != nil && ip.To4() != nil
 	}
 	return stringValidator("ipv4", value, fn)
 }
@@ -268,12 +291,14 @@ func Ipv4(value reflect.Value) error {
 func Ipv6(value reflect.Value) error {
 	fn := func(value reflect.Value) bool {
 		ip := net.ParseIP(value.String())
-		return ip != nil && len(ip) == net.IPv6len
+		return ip != nil && ip.To4() == nil
 	}
 	return stringValidator("ipv6", value, fn)
 }
 
 // Value must be contains specified string
+// Value kind: String
+// It panics if another types given
 func Contains(value reflect.Value, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return strings.Contains(value.String(), params[0].(string))
@@ -289,7 +314,7 @@ func Contains(value reflect.Value, params ...interface{}) error {
 func Gt(value reflect.Value, params ...interface{}) error {
 	valueSize := size(value)
 	paramSize, _ := parseFloat(params[0])
-	if valueSize > paramSize {
+	if valueSize <= paramSize {
 		return errorMessage("gt", params...)
 	}
 	return nil
@@ -303,7 +328,7 @@ func Gt(value reflect.Value, params ...interface{}) error {
 func Lt(value reflect.Value, params ...interface{}) error {
 	valueSize := size(value)
 	paramSize, _ := parseFloat(params[0])
-	if valueSize < paramSize {
+	if valueSize >= paramSize {
 		return errorMessage("lt", params...)
 	}
 	return nil
@@ -331,7 +356,7 @@ func HasKeys(value reflect.Value, params ...interface{}) error {
 			if !found {
 				return errorMessage("has_keys", params...)
 			}
-	 	}
+		}
 	default:
 		panic(errorWrongType)
 	}
@@ -355,21 +380,6 @@ func HasOnlyKeys(value reflect.Value, params ...interface{}) error {
 		panic(errorWrongType)
 	}
 	return nil
-}
-
-// Value must have specified values but not limit to them
-// Only string values supported
-// Value kind: Slice, Array, Map
-// It panics if another types given
-func HasValues(value reflect.Value, params ...interface{}) error {
-	return errors.New("not Implemented")
-}
-
-// Value must have only specified values
-// Value kind: Slice, Array, Map
-// It panics if another types given
-func HasOnlyValues(value reflect.Value, params ...interface{}) error {
-	return errors.New("not Implemented")
 }
 
 // Value must be a valid time in format 15:04:05
@@ -416,13 +426,13 @@ func Password(value reflect.Value) error {
 
 		var a, A, d bool
 		for _, r := range value.String() {
-			if r >= 'a' || r <= 'z' {
+			if r >= 'a' && r <= 'z' {
 				a = true
 			}
-			if r >= 'A' || r <= 'Z' {
+			if r >= 'A' && r <= 'Z' {
 				A = true
 			}
-			if r >= '0' || r <= '9' {
+			if r >= '0' && r <= '9' {
 				d = true
 			}
 		}
@@ -442,33 +452,34 @@ func Date(value reflect.Value, params ...interface{}) error {
 
 // Value must be a valid date and greater or equal specified
 func DateGte(value reflect.Value, params ...interface{}) error {
-	// past, feature, today
 	fn := func(value reflect.Value, params []interface{}) bool {
-		switch params[0] {
-		case "now":
-
-
-		}
+		return dateComparison(value.String(), params, "gte")
 	}
-	return stringValidatorP("date", value, params, fn)
+	return stringValidatorP("date_gte", value, params, fn)
 }
 
 // Value must be a valid date and lower or equal specified
 func DateLte(value reflect.Value, params ...interface{}) error {
-	// past, feature, today
-	return errors.New("not Implemented")
+	fn := func(value reflect.Value, params []interface{}) bool {
+		return dateComparison(value.String(), params, "lte")
+	}
+	return stringValidatorP("date_lte", value, params, fn)
 }
 
 // Value must be a valid date and greater than specified
 func DateGt(value reflect.Value, params ...interface{}) error {
-	// past, feature, today
-	return errors.New("not Implemented")
+	fn := func(value reflect.Value, params []interface{}) bool {
+		return dateComparison(value.String(), params, "gt")
+	}
+	return stringValidatorP("date_gt", value, params, fn)
 }
 
 // Value must be a valid date and lower than specified
 func DateLt(value reflect.Value, params ...interface{}) error {
-	// past, feature, today
-	return errors.New("not Implemented")
+	fn := func(value reflect.Value, params []interface{}) bool {
+		return dateComparison(value.String(), params, "lt")
+	}
+	return stringValidatorP("date_lt", value, params, fn)
 }
 
 // Value must be a valid country code in ISO2 format
@@ -496,15 +507,16 @@ func LanguageCode3(value reflect.Value) error {
 	return codeValidator("language_code3", value, 3, LanguageCodes3)
 }
 
-//todo БОЛЬШЕ ВАЛИДАТОРОВ ДАТЫ И ВРЕМЕНИ!!!
-
-//todo EACH if field is slice or array or map
-
-// Value must be a valid credit card
+// Value must be a valid credit card number
+// It uses luhn algorithm
 func CreditCard(value reflect.Value) error {
-	return errors.New("not Implemented")
+	fn := func(value reflect.Value) bool {
+		return luhn(value.String())
+	}
+	return stringValidator("credit_card", value, fn)
 }
 
+// Helper for creating validators what check string codes
 func codeValidator(ruleName string, value reflect.Value, length int, codes []string) error {
 	switch value.Kind() {
 	case reflect.String:
@@ -559,4 +571,38 @@ func stringValidatorP(ruleName string, value reflect.Value, params []interface{}
 		panic(errorWrongType)
 	}
 	return nil
+}
+
+// Helper for creating date comparision validators
+func dateComparison(value string, params []interface{}, fnName string) bool {
+	layout := params[0].(string)
+	placeholder := DatePlaceholder(params[1].(string))
+
+	date, err := time.Parse(layout, value)
+	if err != nil {
+		return false
+	}
+
+	comparedDate, err := GetDate(placeholder)
+	if err == nil {
+		comparedDate, _ = time.Parse(layout, comparedDate.Format(layout))
+	} else {
+		comparedDate, err = time.Parse(layout, string(placeholder))
+		if err != nil {
+			return false
+		}
+	}
+
+	switch fnName {
+	case "gte":
+		return date.After(comparedDate) || date.Equal(comparedDate)
+	case "lte":
+		return date.Before(comparedDate) || date.Equal(comparedDate)
+	case "gt":
+		return date.After(comparedDate)
+	case "lt":
+		return date.Before(comparedDate)
+	default:
+		return false
+	}
 }

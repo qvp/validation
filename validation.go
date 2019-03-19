@@ -35,31 +35,29 @@ var (
 		"password":       Password,
 	}
 	validatorsWithParams = map[string]func(reflect.Value, ...interface{}) error{
-		"min":             Min,
-		"max":             Max,
-		"len":             Len,
-		"in":              In,
-		"not_in":          NotIn,
-		"date":            Date,
-		"regex":           Regex,
-		"contains":        Contains,
-		"gt":              Gt,
-		"lt":              Lt,
-		"date_gte":        DateGte,
-		"date_lte":        DateLte,
-		"date_gt":         DateGt,
-		"date_lt":         DateLt,
-		"has_prefix":      HasPrefix,
-		"has_suffix":      HasSuffix,
-		"has_keys":        HasKeys,
-		"has_only_keys":   HasOnlyKeys,
-		"has_values":      HasValues,
-		"has_only_values": HasOnlyValues,
+		"min":           Min,
+		"max":           Max,
+		"len":           Len,
+		"in":            In,
+		"not_in":        NotIn,
+		"date":          Date,
+		"regex":         Regex,
+		"contains":      Contains,
+		"gt":            Gt,
+		"lt":            Lt,
+		"date_gte":      DateGte,
+		"date_lte":      DateLte,
+		"date_gt":       DateGt,
+		"date_lt":       DateLt,
+		"has_prefix":    HasPrefix,
+		"has_suffix":    HasSuffix,
+		"has_keys":      HasKeys,
+		"has_only_keys": HasOnlyKeys,
 	}
 	options = map[string]func(reflect.Value) error{
 		"required": Required,
-		"ignore": Ignore,
-		"lazy":   Lazy,
+		"ignore":   Ignore,
+		"lazy":     Lazy,
 	}
 	defaultTag = "valid"
 )
@@ -215,10 +213,17 @@ func AddMessages(messages map[string]string) {
 
 }
 
-func SetDefaultTag(name string) { //todo make this thread safe!!!!
+func SetDefaultTag(name string) { //todo make this thread-safe!!!!
 	defaultTag = name
 }
 
 func DefaultTag() string {
 	return defaultTag
+}
+
+// Return map of right types casted
+//todo research this feature
+func Cast() map[string]interface{} {
+	res := make(map[string]interface{})
+	return res
 }

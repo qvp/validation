@@ -164,3 +164,16 @@ func luhn(num string) bool {
 
 	return sum%10 == 0
 }
+
+// Get valueOf value
+func valueOf(value interface{}) reflect.Value {
+	refValue, ok := value.(reflect.Value)
+	if !ok {
+		refValue = reflect.ValueOf(value)
+	}
+	return refValue
+}
+
+func lenId() {
+
+}

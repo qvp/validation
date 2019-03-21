@@ -7,384 +7,362 @@ import (
 	"time"
 )
 
+type testItem struct {
+	Value   interface{}
+	Options OptionList
+	Params  []interface{}
+	IsValid bool
+}
+
+// For tests with custom types
 type stringT string
 type intT int
 type uint8T uint8
 
-// For test values without parameters
-type testValues map[interface{}]bool
-
-// For test values with parameters
-type testValuesP []struct {
-	Value  interface{}
-	Params []interface{}
-	Valid  bool
-}
-
-func runValidatorP(t *testing.T, fn ValidatorP, items testValuesP) {
-	for _, item := range items {
-		err := fn(reflect.ValueOf(item.Value), item.Params...)
-		if (err != nil && item.Valid) || (err == nil && item.Valid == false) {
-			t.Error(fmt.Sprintf("on value «%s» params: «%s»", item.Value, item.Params))
-		}
-	}
-}
-
-func runValidator(t *testing.T, fn Validator, items testValues) {
-	for value, valid := range items {
-		err := fn(reflect.ValueOf(value))
-		if (err != nil && valid) || (err == nil && valid == false) {
-			t.Error(fmt.Sprintf("on value «%s»", value))
-		}
-	}
-}
-
 func TestEmpty(t *testing.T) {
 	var itf interface{}
 
-	var items = testValues{
-		"":    true,
-		0:     true,
-		0.0:   true,
-		itf:   true,
-		" ":   false,
-		"abc": false,
+	var items = []testItem{
+		{Value: "", IsValid: true},
+		{Value: 0, IsValid: true},
+		{Value: 0.0, IsValid: true},
+		{Value: itf, IsValid: true},
+		{Value: " ", IsValid: false},
+		{Value: "abc", IsValid: false},
 	}
 
-	runValidator(t, Empty, items)
+	testItems(t, Empty, items)
 }
 
 func TestEmail(t *testing.T) {
-	var items = testValues{
-		"mail@example.com":          true,
-		"m@d.io":                    true,
-		"123mail@mail.com":          true,
-		"m-ail_com@mail-server.com": true,
-		"sdfsf@fsfs":                false,
-		"asdad":                     false,
-		"":                          false,
+	var items = []testItem{
+		{Value: "mail@example.com", IsValid: true},
+		{Value: "m@d.io", IsValid: true},
+		{Value: "123mail@mail.com", IsValid: true},
+		{Value: "m-ail_com@mail-server.com", IsValid: true},
+		{Value: "sdfsf@fsfs", IsValid: false},
+		{Value: "abc", IsValid: false},
+		{Value: "", IsValid: false},
 	}
 
-	runValidator(t, Email, items)
+	testItems(t, Email, items)
 }
 
 func TestURL(t *testing.T) {
-	var items = testValues{
-		"https://vk.com":     true,
-		"http://example.com": true,
-		"https://vk.com/":    true,
-		"https://vk.co":      true,
-		"vk":                 false,
-		"vk.com/fake":        false,
-		"vk.com":             false,
-		4:                    false,
-		uint8T(4):            false,
-		"/uri":               false,
+	var items = []testItem{
+		{Value: "https://vk.com", IsValid: true},
+		{Value: "https://vk.com/fake", IsValid: true},
+		{Value: "http://example.com", IsValid: true},
+		{Value: "https://vk.com/", IsValid: true},
+		{Value: "https://vk.co", IsValid: true},
+		{Value: "vk.com", IsValid: false},
+		{Value: "vk", IsValid: false},
+		{Value: "/uri", IsValid: false},
+		{Value: "", IsValid: false},
 	}
 
-	runValidator(t, URL, items)
+	testItems(t, URL, items)
 }
 
 func TestAccepted(t *testing.T) {
-	var items = testValues{
-		"yes":  true,
-		"y":    true,
-		"on":   true,
-		"1":    true,
-		"true": true,
-		1:      true,
-		"YeS":  false,
-		"off":  false,
+	var items = []testItem{
+		{Value: "yes", IsValid: true},
+		{Value: "y", IsValid: true},
+		{Value: "on", IsValid: true},
+		{Value: "1", IsValid: true},
+		{Value: "true", IsValid: true},
+		{Value: "YeS", IsValid: false},
+		{Value: "off", IsValid: false},
 	}
 
-	runValidator(t, Accepted, items)
+	testItems(t, Accepted, items)
 }
 
 func TestMin(t *testing.T) {
-	var items = testValuesP{
-		{"abc", []interface{}{"3"}, true},
-		{-4, []interface{}{"-9"}, true},
-		{stringT("string str"), []interface{}{"3"}, true},
-		{9, []interface{}{"18"}, false},
-		{uint8T(9), []interface{}{"18"}, false},
-		{"Привет", []interface{}{"30"}, false},
+	var items = []testItem{
+		{Value: "abc", Params: []interface{}{"3"}, IsValid: true},
+		{Value: -4, Params: []interface{}{"-9"}, IsValid: true},
+		{Value: stringT("string str"), Params: []interface{}{"3"}, IsValid: true},
+		{Value: 9, Params: []interface{}{"18"}, IsValid: false},
+		{Value: uint8T(9), Params: []interface{}{"18"}, IsValid: false},
+		{Value: "Привет", Params: []interface{}{"30"}, IsValid: false},
 	}
 
-	runValidatorP(t, Min, items)
+	testItems(t, min, items)
 }
 
 func TestMax(t *testing.T) {
-	var items = testValuesP{
-		{"abc", []interface{}{"3"}, true},
-		{10, []interface{}{"18"}, true},
-		{10, []interface{}{18}, true},
-		{intT(10), []interface{}{18}, true},
-		{-4, []interface{}{"-9"}, false},
-		{"Яблоко", []interface{}{"3"}, false},
-		{"Груша", []interface{}{"6"}, true},
-		{stringT("string str"), []interface{}{"3"}, false},
+	var items = []testItem{
+		{Value: "abc", Params: []interface{}{"3"}, IsValid: true},
+		{Value: 10, Params: []interface{}{"18"}, IsValid: true},
+		{Value: 10, Params: []interface{}{18}, IsValid: true},
+		{Value: intT(10), Params: []interface{}{18}, IsValid: true},
+		{Value: -4, Params: []interface{}{"-9"}, IsValid: false},
+		{Value: "Яблоко", Params: []interface{}{"3"}, IsValid: false},
+		{Value: "Груша", Params: []interface{}{"6"}, IsValid: true},
+		{Value: stringT("string str"), Params: []interface{}{"3"}, IsValid: false},
 	}
 
-	runValidatorP(t, Max, items)
+	testItems(t, Max, items)
 }
 
 func TestLen(t *testing.T) {
-	var items = testValuesP{
-		{"ABC", []interface{}{3}, true},
-		{[]int{1, 2}, []interface{}{"2"}, true},
-		{[2]int{1, 2}, []interface{}{9}, false},
+	var items = []testItem{
+		{Value: "ABC", Params: []interface{}{3}, IsValid: true},
+		{Value: []int{1, 2}, Params: []interface{}{"2"}, IsValid: true},
+		{Value: [2]int{1, 2}, Params: []interface{}{9}, IsValid: false},
 	}
 
-	runValidatorP(t, Len, items)
+	testItems(t, Len, items)
 }
 
 func TestIn(t *testing.T) {
-	var items = testValuesP{
-		{"yes", []interface{}{"yes", "no"}, true},
-		{"nO", []interface{}{"yes", "no"}, false},
-		{-4, []interface{}{"-9", "-4"}, true},
-		{"Слива", []interface{}{"слива", "персик", "смородина"}, false},
-		{stringT("yes"), []interface{}{"yes", "no"}, true},
-		{1, []interface{}{1, 2, 3}, true},
-		{2.0, []interface{}{1, 2, 3}, true},
+	var items = []testItem{
+		{Value: "yes", Params: []interface{}{"yes", "no"}, IsValid: true},
+		{Value: "nO", Params: []interface{}{"yes", "no"}, IsValid: false},
+		{Value: -4, Params: []interface{}{"-9", "-4"}, IsValid: true},
+		{Value: "Слива", Params: []interface{}{"слива", "персик", "смородина"}, IsValid: false},
+		{Value: stringT("yes"), Params: []interface{}{"yes", "no"}, IsValid: true},
+		{Value: 1, Params: []interface{}{1, 2, 3}, IsValid: true},
+		{Value: 2.0, Params: []interface{}{1, 2, 3}, IsValid: true},
 	}
 
-	runValidatorP(t, In, items)
+	testItems(t, In, items)
 }
 
 func TestNotIn(t *testing.T) {
-	var items = testValuesP{
-		{"A", []interface{}{"A", "B"}, false},
-		{1, []interface{}{1, 2}, false},
-		{3, []interface{}{1, 2}, true},
-		{3, []interface{}{1, 2}, true},
+	var items = []testItem{
+		{Value: "A", Params: []interface{}{"A", "B"}, IsValid: false},
+		{Value: 1, Params: []interface{}{1, 2}, IsValid: false},
+		{Value: 3, Params: []interface{}{1, 2}, IsValid: true},
+		{Value: 3, Params: []interface{}{1, 2}, IsValid: true},
 	}
 
-	runValidatorP(t, NotIn, items)
+	testItems(t, NotIn, items)
 }
 
 func TestHasPrefix(t *testing.T) {
-	var items = testValuesP{
-		{"prepare", []interface{}{"pre"}, true},
-		{"prepare", []interface{}{"PRE"}, false},
-		{"prepare", []interface{}{"pres"}, false},
+	var items = []testItem{
+		{Value: "prepare", Params: []interface{}{"pre"}, IsValid: true},
+		{Value: "prepare", Params: []interface{}{"PRE"}, IsValid: false},
+		{Value: "prepare", Params: []interface{}{"pres"}, IsValid: false},
 	}
 
-	runValidatorP(t, HasPrefix, items)
+	testItems(t, HasPrefix, items)
 }
 
 func TestHasSuffix(t *testing.T) {
-	var items = testValuesP{
-		{"prepare", []interface{}{"are"}, true},
-		{"prepare", []interface{}{"ARE"}, false},
-		{"prepare", []interface{}{"ares"}, false},
+	var items = []testItem{
+		{Value: "prepare", Params: []interface{}{"are"}, IsValid: true},
+		{Value: "prepare", Params: []interface{}{"ARE"}, IsValid: false},
+		{Value: "prepare", Params: []interface{}{"ares"}, IsValid: false},
 	}
 
-	runValidatorP(t, HasSuffix, items)
+	testItems(t, HasSuffix, items)
 }
 
 func TestRegex(t *testing.T) {
-	var items = testValuesP{
-		{"123", []interface{}{"^[\\d]{3}$"}, true},
-		{"YES", []interface{}{"(?i)yes"}, true},
-		{"YES", []interface{}{"yes"}, false},
+	var items = []testItem{
+		{Value: "123", Params: []interface{}{"^[\\d]{3}$"}, IsValid: true},
+		{Value: "YES", Params: []interface{}{"(?i)yes"}, IsValid: true},
+		{Value: "YES", Params: []interface{}{"yes"}, IsValid: false},
 	}
 
-	runValidatorP(t, Regex, items)
+	testItems(t, Regex, items)
 }
 
 func TestAlpha(t *testing.T) {
-	var items = testValues{
-		"abc":     true,
-		"abcXYz":  true,
-		"abcАБВ":  false,
-		"":        false,
-		"123abc":  false,
-		"  abc  ": false,
-		"a b c":   false,
-		"123":     false,
+	var items = []testItem{
+		{Value: "abc", IsValid: true},
+		{Value: "abcXYz", IsValid: true},
+		{Value: "abcАБВ", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "123abc", IsValid: false},
+		{Value: "  abc  ", IsValid: false},
+		{Value: "a b c", IsValid: false},
+		{Value: "123", IsValid: false},
 	}
 
-	runValidator(t, Alpha, items)
+	testItems(t, Alpha, items)
 }
 
 func TestAlphaNumeric(t *testing.T) {
-	var items = testValues{
-		"abc":     true,
-		"abc123":  true,
-		"123":     true,
-		"":        false,
-		"abc234/": false,
+	var items = []testItem{
+		{Value: "abc", IsValid: true},
+		{Value: "abc123", IsValid: true},
+		{Value: "123", IsValid: true},
+		{Value: "", IsValid: false},
+		{Value: "abc234/", IsValid: false},
 	}
 
-	runValidator(t, AlphaNumeric, items)
+	testItems(t, AlphaNumeric, items)
 }
 
 func TestAlphaUnder(t *testing.T) {
-	var items = testValues{
-		"abc_xyz": true,
-		"abc":     true,
-		"_":       true,
-		"__abc__": true,
-		"":        false,
-		"abc_234": false,
-		"435":     false,
-		"--abc_":  false,
+	var items = []testItem{
+		{Value: "abc_xyz", IsValid: true},
+		{Value: "abc", IsValid: true},
+		{Value: "_", IsValid: true},
+		{Value: "__abc__", IsValid: true},
+		{Value: "", IsValid: false},
+		{Value: "abc_234", IsValid: false},
+		{Value: "435", IsValid: false},
+		{Value: "--abc_", IsValid: false},
 	}
 
-	runValidator(t, AlphaUnder, items)
+	testItems(t, AlphaUnder, items)
 }
 
 func TestAlphaDash(t *testing.T) {
-	var items = testValues{
-		"abc-xyz": true,
-		"abc":     true,
-		"-":       true,
-		"--abc--": true,
-		"":        false,
-		"abc_234": false,
-		"435":     false,
-		"--abc_":  false,
+	var items = []testItem{
+		{Value: "abc-xyz", IsValid: true},
+		{Value: "abc", IsValid: true},
+		{Value: "-", IsValid: true},
+		{Value: "--abc--", IsValid: true},
+		{Value: "", IsValid: false},
+		{Value: "abc_234", IsValid: false},
+		{Value: "435", IsValid: false},
+		{Value: "--abc_", IsValid: false},
 	}
 
-	runValidator(t, AlphaDash, items)
+	testItems(t, AlphaDash, items)
 }
 
 func TestASCII(t *testing.T) {
-	var items = testValues{
-		" !\"#$%&\\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~": true,
-		"АБВ": false,
-		"":    false,
-		"호랑이": false,
+	var items = []testItem{
+		{Value: " !\"#$%&\\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~", IsValid: true},
+		{Value: "АБВ", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "호랑이", IsValid: false},
 	}
 
-	runValidator(t, ASCII, items)
+	testItems(t, ASCII, items)
 }
 
 func TestInt(t *testing.T) {
-	var items = testValues{
-		"123":   true,
-		"0":     true,
-		"0.123": false,
-		"":      false,
-		"  1.5": false,
-		"1,5":   false,
+	var items = []testItem{
+		{Value: "123", IsValid: true},
+		{Value: "0", IsValid: true},
+		{Value: "0.123", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "  1.5", IsValid: false},
+		{Value: "1,5", IsValid: false},
 	}
 
-	runValidator(t, Int, items)
+	testItems(t, Int, items)
 }
 
 func TestFloat(t *testing.T) {
-	var items = testValues{
-		"0.123": true,
-		"123":   false,
-		"":      false,
-		"  1.5": false,
-		"1,5":   false,
+	var items = []testItem{
+		{Value: "0.123", IsValid: true},
+		{Value: "123", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "  1.5", IsValid: false},
+		{Value: "1,5", IsValid: false},
 	}
 
-	runValidator(t, Float, items)
+	testItems(t, Float, items)
 }
 
 func TestJSON(t *testing.T) {
-	var items = testValues{
-		"\"string value\"": true,
-		"[1,4]":            true,
-		"[]":               true,
-		"{}":               true,
-		"{\"id\":5}":       true,
-		"{'id':5}":         false,
-		"string":           false,
-		"{\"string\"}":     false,
+	var items = []testItem{
+		{Value: "\"string value\"", IsValid: true},
+		{Value: "[1,4]", IsValid: true},
+		{Value: "[]", IsValid: true},
+		{Value: "{}", IsValid: true},
+		{Value: "{\"id\":5}", IsValid: true},
+		{Value: "{'id':5}", IsValid: false},
+		{Value: "string", IsValid: false},
+		{Value: "{\"string\"}", IsValid: false},
 	}
 
-	runValidator(t, JSON, items)
+	testItems(t, JSON, items)
 }
 
 func TestIp(t *testing.T) {
-	var items = testValues{
-		"127.0.0.1":                true,
-		"64:ff9b::255.255.255.255": true,
-		"400.0.0.0":                false,
-		"192.168.0.0/16":           false,
-		"":                         false,
-		"123.456":                  false,
+	var items = []testItem{
+		{Value: "127.0.0.1", IsValid: true},
+		{Value: "64:ff9b::255.255.255.255", IsValid: true},
+		{Value: "400.0.0.0", IsValid: false},
+		{Value: "192.168.0.0/16", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "123.456", IsValid: false},
 	}
 
-	runValidator(t, Ip, items)
+	testItems(t, Ip, items)
 }
 
 func TestIpv4(t *testing.T) {
-	var items = testValues{
-		"216.3.128.12":             true,
-		"127.0.0.1":                true,
-		"192.168.0.0":              true,
-		"64:ff9b::255.255.255.255": false,
-		"192.168.0.0/16":           false,
-		"":                         false,
-		"123.456":                  false,
+	var items = []testItem{
+		{Value: "216.3.128.12", IsValid: true},
+		{Value: "127.0.0.1", IsValid: true},
+		{Value: "192.168.0.0", IsValid: true},
+		{Value: "64:ff9b::255.255.255.255", IsValid: false},
+		{Value: "192.168.0.0/16", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "123.456", IsValid: false},
 	}
 
-	runValidator(t, Ipv4, items)
+	testItems(t, Ipv4, items)
 }
 
 func TestIpv6(t *testing.T) {
-	var items = testValues{
-		"64:ff9b::255.255.255.255":                true,
-		"FE80:0000:0000:0000:0202:B3FF:FE1E:8329": true,
-		"[2001:db8:0:1]:80":                       false,
-		"216.3.128.12":                            false,
-		"127.0.0.1":                               false,
-		"192.168.0.0":                             false,
-		"192.168.0.0/16":                          false,
-		"":                                        false,
-		"123.456":                                 false,
+	var items = []testItem{
+		{Value: "64:ff9b::255.255.255.255", IsValid: true},
+		{Value: "FE80:0000:0000:0000:0202:B3FF:FE1E:8329", IsValid: true},
+		{Value: "[2001:db8:0:1]:80", IsValid: false},
+		{Value: "216.3.128.12", IsValid: false},
+		{Value: "127.0.0.1", IsValid: false},
+		{Value: "192.168.0.0", IsValid: false},
+		{Value: "192.168.0.0/16", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "123.456", IsValid: false},
 	}
 
-	runValidator(t, Ipv6, items)
+	testItems(t, Ipv6, items)
 }
 
 func TestContains(t *testing.T) {
-	var items = testValuesP{
-		{"Prepare", []interface{}{"rep"}, true},
-		{"Prepare", []interface{}{"Pre"}, true},
-		{"Prepare", []interface{}{"are"}, true},
-		{"Prepare", []interface{}{""}, true},
-		{"", []interface{}{""}, true},
-		{"Prepare", []interface{}{"res"}, false},
-		{"Prepare", []interface{}{"aRe"}, false},
-		{"Prepare", []interface{}{"pre"}, false},
+	var items = []testItem{
+		{Value: "Prepare", Params: []interface{}{"rep"}, IsValid: true},
+		{Value: "Prepare", Params: []interface{}{"Pre"}, IsValid: true},
+		{Value: "Prepare", Params: []interface{}{"are"}, IsValid: true},
+		{Value: "Prepare", Params: []interface{}{""}, IsValid: true},
+		{Value: "", Params: []interface{}{""}, IsValid: true},
+		{Value: "Prepare", Params: []interface{}{"res"}, IsValid: false},
+		{Value: "Prepare", Params: []interface{}{"aRe"}, IsValid: false},
+		{Value: "Prepare", Params: []interface{}{"pre"}, IsValid: false},
 	}
 
-	runValidatorP(t, Contains, items)
+	testItems(t, Contains, items)
 }
 
 func TestGt(t *testing.T) {
-	var items = testValuesP{
-		{"ABC", []interface{}{2}, true},
-		{10, []interface{}{2}, true},
-		{[]int{1, 2, 3}, []interface{}{"2"}, true},
-		{"ABC", []interface{}{3}, false},
-		{"ABC", []interface{}{5}, false},
-		{"", []interface{}{2}, false},
-		{5, []interface{}{20}, false},
+	var items = []testItem{
+		{Value: "ABC", Params: []interface{}{2}, IsValid: true},
+		{Value: 10, Params: []interface{}{2}, IsValid: true},
+		{Value: []int{1, 2, 3}, Params: []interface{}{"2"}, IsValid: true},
+		{Value: "ABC", Params: []interface{}{3}, IsValid: false},
+		{Value: "ABC", Params: []interface{}{5}, IsValid: false},
+		{Value: "", Params: []interface{}{2}, IsValid: false},
+		{Value: 5, Params: []interface{}{20}, IsValid: false},
 	}
 
-	runValidatorP(t, Gt, items)
+	testItems(t, Gt, items)
 }
 
 func TestLt(t *testing.T) {
-	var items = testValuesP{
-		{"ABC", []interface{}{4}, true},
-		{10, []interface{}{40}, true},
-		{[]int{1, 2, 3}, []interface{}{"4"}, true},
-		{"", []interface{}{2}, true},
-		{"ABC", []interface{}{3}, false},
-		{"ABC", []interface{}{1}, false},
-		{50, []interface{}{20}, false},
+	var items = []testItem{
+		{Value: "ABC", Params: []interface{}{4}, IsValid: true},
+		{Value: 10, Params: []interface{}{40}, IsValid: true},
+		{Value: []int{1, 2, 3}, Params: []interface{}{"4"}, IsValid: true},
+		{Value: "", Params: []interface{}{2}, IsValid: true},
+		{Value: "ABC", Params: []interface{}{3}, IsValid: false},
+		{Value: "ABC", Params: []interface{}{1}, IsValid: false},
+		{Value: 50, Params: []interface{}{20}, IsValid: false},
 	}
 
-	runValidatorP(t, Lt, items)
+	testItems(t, Lt, items)
 }
 
 func TestHasKeys(t *testing.T) {
@@ -395,13 +373,13 @@ func TestHasKeys(t *testing.T) {
 		"z": true,
 	}
 
-	var items = testValuesP{
-		{m, []interface{}{"x", "y"}, true},
-		{m, []interface{}{"x", "y", "f"}, false},
-		{m, []interface{}{""}, false},
+	var items = []testItem{
+		{Value: m, Params: []interface{}{"x", "y"}, IsValid: true},
+		{Value: m, Params: []interface{}{"x", "y", "f"}, IsValid: false},
+		{Value: m, Params: []interface{}{""}, IsValid: false},
 	}
 
-	runValidatorP(t, HasKeys, items)
+	testItems(t, HasKeys, items)
 }
 
 func TestHasOnlyKeys(t *testing.T) {
@@ -412,213 +390,222 @@ func TestHasOnlyKeys(t *testing.T) {
 		"z": true,
 	}
 
-	var items = testValuesP{
-		{m, []interface{}{"x", "y", "z"}, true},
-		{m, []interface{}{"x", "y"}, false},
-		{m, []interface{}{"x", "y", "f"}, false},
-		{m, []interface{}{""}, false},
+	var items = []testItem{
+		{Value: m, Params: []interface{}{"x", "y", "z"}, IsValid: true},
+		{Value: m, Params: []interface{}{"x", "y"}, IsValid: false},
+		{Value: m, Params: []interface{}{"x", "y", "f"}, IsValid: false},
+		{Value: m, Params: []interface{}{""}, IsValid: false},
 	}
 
-	runValidatorP(t, HasOnlyKeys, items)
+	testItems(t, HasOnlyKeys, items)
 }
 
 func TestTime(t *testing.T) {
-	var items = testValues{
-		"12:30:01": true,
-		"00:00:00": true,
-		"00:00:90": false,
-		"":         false,
-		"abc":      false,
-		"12:00":    false,
+	var items = []testItem{
+		{Value: "12:30:01", IsValid: true},
+		{Value: "00:00:00", IsValid: true},
+		{Value: "00:00:90", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "abc", IsValid: false},
+		{Value: "12:00", IsValid: false},
 	}
 
-	runValidator(t, Time, items)
+	testItems(t, Time, items)
 }
 
 func TestUpperCase(t *testing.T) {
-	var items = testValues{
-		"ABC":       true,
-		"":          true,
-		"АБВ":       true,
-		" ":         true,
-		"13 - 54.5": true,
-		"ABC ":      true,
-		"abc":       false,
-		"abcABC":    false,
+	var items = []testItem{
+		{Value: "ABC", IsValid: true},
+		{Value: "", IsValid: true},
+		{Value: "АБВ", IsValid: true},
+		{Value: " ", IsValid: true},
+		{Value: "13 - 54.5", IsValid: true},
+		{Value: "ABC ", IsValid: true},
+		{Value: "abc", IsValid: false},
+		{Value: "abcABC", IsValid: false},
 	}
 
-	runValidator(t, UpperCase, items)
+	testItems(t, UpperCase, items)
 }
 
 func TestLowerCase(t *testing.T) {
-	var items = testValues{
-		"abc":       true,
-		"":          true,
-		"абв":       true,
-		" ":         true,
-		"13 - 54.5": true,
-		"abc ":      true,
-		"ABC":       false,
-		"abcABC":    false,
+	var items = []testItem{
+		{Value: "abc", IsValid: true},
+		{Value: "", IsValid: true},
+		{Value: "абв", IsValid: true},
+		{Value: " ", IsValid: true},
+		{Value: "13 - 54.5", IsValid: true},
+		{Value: "abc ", IsValid: true},
+		{Value: "ABC", IsValid: false},
+		{Value: "abcABC", IsValid: false},
 	}
 
-	runValidator(t, LowerCase, items)
+	testItems(t, LowerCase, items)
 }
 
 func TestPassword(t *testing.T) {
-	var items = testValues{
-		"abcABC0123":          true,
-		"abcABC0123#24!!!":    true,
-		"abcA01":              false,
-		"abczyxfsdfjsf":       false,
-		"abczyxfsdfjsf123123": false,
-		"SDFSFKLSFLSF123123":  false,
+	var items = []testItem{
+		{Value: "abcABC0123", IsValid: true},
+		{Value: "abcABC0123#24!!!", IsValid: true},
+		{Value: "abcA01", IsValid: false},
+		{Value: "abczyxfsdfjsf", IsValid: false},
+		{Value: "abczyxfsdfjsf123123", IsValid: false},
+		{Value: "SDFSFKLSFLSF123123", IsValid: false},
 	}
 
-	runValidator(t, Password, items)
+	testItems(t, Password, items)
 }
 
 func TestDate(t *testing.T) {
-	var items = testValuesP{
-		{"01-12-2019", []interface{}{"02-01-2006"}, true},
-		{"01-52-2019", []interface{}{"02-01-2006"}, false},
-		{"fake str", []interface{}{"02-01-2006"}, false},
+	var items = []testItem{
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006"}, IsValid: true},
+		{Value: "01-52-2019", Params: []interface{}{"02-01-2006"}, IsValid: false},
+		{Value: "fake str", Params: []interface{}{"02-01-2006"}, IsValid: false},
 	}
 
-	runValidatorP(t, Date, items)
+	testItems(t, Date, items)
 }
 
 func TestDateGte(t *testing.T) {
 	now := time.Now()
 
-	var items = testValuesP{
-		{now.Format("02-01-2006"), []interface{}{"02-01-2006", "-1D"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "01-11-2017"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "01-12-2019"}, true},
-		{now.Format("02-01-2006"), []interface{}{"02-01-2006", "+1D"}, false},
-		{"01-12-2019", []interface{}{"02-01-2006", "02-12-2019"}, false},
-		{"01-52-2019", []interface{}{"02-01-2006", "02-12-2019"}, false},
-		{"fake str", []interface{}{"02-01-2006", "02-12-2019"}, false},
+	var items = []testItem{
+		{Value: now.Format("02-01-2006"), Params: []interface{}{"02-01-2006", "-1D"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "01-11-2017"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "01-12-2019"}, IsValid: true},
+		{Value: now.Format("02-01-2006"), Params: []interface{}{"02-01-2006", "+1D"}, IsValid: false},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
+		{Value: "01-52-2019", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
+		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	runValidatorP(t, DateGte, items)
+	testItems(t, DateGte, items)
 }
 
 func TestDateLte(t *testing.T) {
 	now := time.Now()
 
-	var items = testValuesP{
-		{now.Format("02-01-2006"), []interface{}{"02-01-2006", "+1D"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "10-12-2019"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "01-12-2019"}, true},
-		{now.Format("02-01-2006"), []interface{}{"02-01-2006", "-1D"}, false},
-		{"01-12-2019", []interface{}{"02-01-2006", "02-11-2019"}, false},
-		{"01-52-2019", []interface{}{"02-01-2006", "02-12-2019"}, false},
-		{"fake str", []interface{}{"02-01-2006", "02-12-2019"}, false},
+	var items = []testItem{
+		{Value: now.Format("02-01-2006"), Params: []interface{}{"02-01-2006", "+1D"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "10-12-2019"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "01-12-2019"}, IsValid: true},
+		{Value: now.Format("02-01-2006"), Params: []interface{}{"02-01-2006", "-1D"}, IsValid: false},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "02-11-2019"}, IsValid: false},
+		{Value: "01-52-2019", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
+		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	runValidatorP(t, DateLte, items)
+	testItems(t, DateLte, items)
 }
 
 func TestDateGt(t *testing.T) {
 	now := time.Now()
 
-	var items = testValuesP{
-		{now.Format("02-01-2006"), []interface{}{"02-01-2006", "-1D"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "10-12-2010"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "01-12-2019"}, false},
-		{"01-52-2019", []interface{}{"02-01-2006", "02-12-2019"}, false},
-		{"fake str", []interface{}{"02-01-2006", "02-12-2019"}, false},
+	var items = []testItem{
+		{Value: now.Format("02-01-2006"), Params: []interface{}{"02-01-2006", "-1D"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "10-12-2010"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "01-12-2019"}, IsValid: false},
+		{Value: "01-52-2019", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
+		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	runValidatorP(t, DateGt, items)
+	testItems(t, DateGt, items)
 }
 
 func TestDateLt(t *testing.T) {
 	now := time.Now()
 
-	var items = testValuesP{
-		{now.Format("02-01-2006"), []interface{}{"02-01-2006", "+1D"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "10-12-2020"}, true},
-		{"01-12-2019", []interface{}{"02-01-2006", "01-12-2019"}, false},
-		{"01-52-2019", []interface{}{"02-01-2006", "02-12-2019"}, false},
-		{"fake str", []interface{}{"02-01-2006", "02-12-2019"}, false},
+	var items = []testItem{
+		{Value: now.Format("02-01-2006"), Params: []interface{}{"02-01-2006", "+1D"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "10-12-2020"}, IsValid: true},
+		{Value: "01-12-2019", Params: []interface{}{"02-01-2006", "01-12-2019"}, IsValid: false},
+		{Value: "01-52-2019", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
+		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	runValidatorP(t, DateLt, items)
+	testItems(t, DateLt, items)
 }
 
 func TestCountryCode2(t *testing.T) {
-	var items = testValues{
-		"RU":  true,
-		"ZU":  false,
-		"ru":  false,
-		"RUS": false,
+	var items = []testItem{
+		{Value: "RU", IsValid: true},
+		{Value: "ZU", IsValid: false},
+		{Value: "ru", IsValid: false},
+		{Value: "RUS", IsValid: false},
 	}
 
-	runValidator(t, CountryCode2, items)
+	testItems(t, CountryCode2, items)
 }
 
 func TestCountryCode3(t *testing.T) {
-	var items = testValues{
-		"AFG": true,
-		"RU":  false,
-		"ZU":  false,
-		"rus": false,
-		"ZUZ": false,
+	var items = []testItem{
+		{Value: "AFG", IsValid: true},
+		{Value: "RU", IsValid: false},
+		{Value: "ZU", IsValid: false},
+		{Value: "rus", IsValid: false},
+		{Value: "ZUZ", IsValid: false},
 	}
 
-	runValidator(t, CountryCode3, items)
+	testItems(t, CountryCode3, items)
 }
 
 func TestCurrencyCode(t *testing.T) {
-	var items = testValues{
-		"RUB": true,
-		"rub": false,
-		"RU":  false,
+	var items = []testItem{
+		{Value: "RUB", IsValid: true},
+		{Value: "rub", IsValid: false},
+		{Value: "RU", IsValid: false},
 	}
 
-	runValidator(t, CurrencyCode, items)
+	testItems(t, CurrencyCode, items)
 }
 
 func TestLanguageCode2(t *testing.T) {
-	var items = testValues{
-		"ru":  true,
-		"zu":  true,
-		"RU":  false,
-		"rus": false,
-		"ZUZ": false,
+	var items = []testItem{
+		{Value: "ru", IsValid: true},
+		{Value: "zu", IsValid: true},
+		{Value: "RU", IsValid: false},
+		{Value: "rus", IsValid: false},
+		{Value: "ZUZ", IsValid: false},
 	}
 
-	runValidator(t, LanguageCode2, items)
+	testItems(t, LanguageCode2, items)
 }
 
 func TestLanguageCode3(t *testing.T) {
-	var items = testValues{
-		"rus": true,
-		"RU":  false,
-		"ru":  false,
+	var items = []testItem{
+		{Value: "rus", IsValid: true},
+		{Value: "RU", IsValid: false},
+		{Value: "ru", IsValid: false},
 	}
 
-	runValidator(t, LanguageCode3, items)
+	testItems(t, LanguageCode3, items)
 }
 
 func TestCreditCard(t *testing.T) {
-	var items = testValues{
-		"4111111111111111":           true,  // Visa
-		"5500000000000004":           true,  // MasterCard
-		"340000000000009":            true,  // American Express
-		"30000000000004":             true,  // Diner's Club
-		"6011000000000004":           true,  // Discover
-		"201400000000009":            true,  // en Route
-		"3088000000000009":           true,  // JCB
-		"     4111111111111111     ": false, // Visa
-		"0000 1111 1111 1111":        false,
-		"4111 1111 1111 1111":        false,
-		"4111 1111 1111":             false,
-		"":                           false,
-		"4111 1111 1111 1111 1111 1111 1111 1111": false,
+	var items = []testItem{
+		{Value: "4111111111111111", IsValid: true},            // Visa
+		{Value: "5500000000000004", IsValid: true},            // MasterCard
+		{Value: "340000000000009", IsValid: true},             // American Express
+		{Value: "30000000000004", IsValid: true},              // Diner's Club
+		{Value: "6011000000000004", IsValid: true},            // Discover
+		{Value: "201400000000009", IsValid: true},             // en Route
+		{Value: "3088000000000009", IsValid: true},            // JCB
+		{Value: "     4111111111111111     ", IsValid: false}, // Visa
+		{Value: "0000 1111 1111 1111", IsValid: false},
+		{Value: "4111 1111 1111 1111", IsValid: false},
+		{Value: "4111 1111 1111", IsValid: false},
+		{Value: "", IsValid: false},
+		{Value: "4111 1111 1111 1111 1111 1111 1111 1111", IsValid: false},
 	}
 
-	runValidator(t, CreditCard, items)
+	testItems(t, CreditCard, items)
+}
+
+func testItems(t *testing.T, fn Validator, items []testItem) {
+	for _, item := range items {
+		err := fn(reflect.ValueOf(item.Value), item.Options, item.Params...)
+		if (err != nil && item.IsValid) || (err == nil && item.IsValid == false) {
+			t.Error(fmt.Sprintf("on value «%s» params: «%s»", item.Value, item.Params))
+		}
+	}
 }

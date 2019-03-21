@@ -5,8 +5,10 @@ import (
 	"reflect"
 )
 
+//todo return Validator type
+
 func URL(value reflect.Value) error {
-	return validation.URL(value)
+	return validation.Validator(validation.URL)(value)
 }
 
 func Email(value reflect.Value) error {

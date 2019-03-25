@@ -66,7 +66,7 @@ func Clear(value interface{}) interface{} { //todo maybe add Slice, Array, Map?
 //Set default value if value is empty
 //func Default(value interface{}) interface{} { //todo this need action options!
 //	valueOf := reflect.ValueOf(value)
-//	if Empty(valueOf, OptionList{}) == nil {
+//	if empty(valueOf, OptionList{}) == nil {
 //		switch valueOf.Kind() {
 //		case reflect.:
 //

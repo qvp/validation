@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -13,55 +12,22 @@ type Wrapper struct {
 	Reflected bool
 }
 
-var defaultTag = "valid"
-
-// Validate scalar value
-func ValidateValue(value interface{}, args ...interface{}) (errors []error) {
-	wrappers, options, actions := prepareRules(args...)
-
-	for _, action := range actions {
-		value = action(value)
-	}
-
-	reflectedValue := valueOf(value)
-
-	if options.Has(Ignore) {
-		return errors
-	}
-
-	if options.Has(Required) == false {
-		if Empty(reflectedValue, OptionList{}) == nil {
-			return errors
-		}
-	}
-
-	for _, wrapper := range wrappers {
-		var err error
-		if wrapper.Reflected {
-			err = wrapper.Function(reflectedValue, options, wrapper.Params)
-		} else {
-			err = wrapper.Function(value, options, wrapper.Params)
-		}
-		if err != nil {
-			errors = append(errors, err)
-			if options.Has(Lazy) {
-				return errors
-			}
-		}
-	}
-
-	return errors
+// Represent struct attribute for validation
+type Field struct {
+	Name  string
+	Value reflect.Value
+	Rules string
 }
 
-func ValidateStruct(s interface{}, tags ...string) map[string][]error {
-	errs := make(map[string][]error)
-	fields, err := InspectStruct(s, tags...)
-	if err != nil {
-		panic("struct only") //todo better solution
-	}
+var defaultTag = "valid"
+
+// Validate structure
+func ValidateStruct(s interface{}, tags ...string) ErrorMap {
+	errs := ErrorMap{}
+	fields := InspectStruct(s, tags...)
 
 	for _, field := range fields {
-		fieldErrs := ValidateValue(field.Value, field.ValidTag)
+		fieldErrs := validate(s, field.Value, field.Rules)
 		if fieldErrs != nil {
 			errs[field.Name] = fieldErrs
 		}
@@ -70,16 +36,21 @@ func ValidateStruct(s interface{}, tags ...string) map[string][]error {
 	return errs
 }
 
-func InspectStruct(s interface{}, tags ...string) (res []StructField, err error) {
+// Validate scalar value
+func ValidateValue(value interface{}, args ...interface{}) ErrorList {
+	return validate(value, value, args...)
+}
+
+func InspectStruct(s interface{}, tags ...string) (res []Field) {
 	typeOf := reflect.TypeOf(s)
 	valueOf := reflect.ValueOf(s)
 
 	if typeOf.Kind() != reflect.Struct {
-		return nil, errors.New("value must be a struct")
+		panic(errorWrongType)
 	}
 
 	for i := 0; i < typeOf.NumField(); i++ {
-		f := StructField{
+		f := Field{
 			Name:  typeOf.Field(i).Name,
 			Value: valueOf.Field(i),
 		}
@@ -87,20 +58,20 @@ func InspectStruct(s interface{}, tags ...string) (res []StructField, err error)
 		if len(tags) > 0 {
 			for _, tag := range tags {
 				tagValue := typeOf.Field(i).Tag.Get(tag)
-				if len(tagValue) > 0 && len(f.ValidTag) > 0 {
-					f.ValidTag = f.ValidTag + "|" + tagValue
+				if len(tagValue) > 0 && len(f.Rules) > 0 {
+					f.Rules = f.Rules + "|" + tagValue
 				} else {
-					f.ValidTag = tagValue
+					f.Rules = tagValue
 				}
 			}
 		} else {
-			f.ValidTag = typeOf.Field(i).Tag.Get(defaultTag)
+			f.Rules = typeOf.Field(i).Tag.Get(defaultTag)
 		}
 
 		res = append(res, f)
 	}
 
-	return res, nil
+	return res
 }
 
 func By(function Validator, params ...interface{}) Wrapper {
@@ -116,14 +87,16 @@ func prepareRules(args ...interface{}) ([]Wrapper, OptionList, ActionMap) {
 	prepareRule := func(rule Rule, wrp *[]Wrapper, options *OptionList, actions ActionMap) {
 		if validator, ok := rule.Validator(); ok {
 			*wrp = append(*wrp, Wrapper{Function: validator, Params: rule.Params, Reflected: rule.IsBuiltin()})
-		}
-		if option, ok := rule.Option(); ok {
+
+		} else if option, ok := rule.Option(); ok {
 			*options = append(*options, option)
-		}
-		if action, ok := rule.Action(); ok {
+
+		} else if action, ok := rule.Action(); ok {
 			actions[actions.key()] = action
+
+		} else {
+			panic(fmt.Sprintf("Rule \"%s\" not found", rule.Name))
 		}
-		panic(fmt.Sprintf("Rule \"%s\" not found", rule.Name))
 	}
 
 	for _, arg := range args {
@@ -159,9 +132,48 @@ func prepareRules(args ...interface{}) ([]Wrapper, OptionList, ActionMap) {
 			actions[actions.key()] = action
 
 		default:
-			panic(errorWrongType + fmt.Sprintf("%T", arg))
+			fmt.Printf("###### %T", arg)
+			panic(errorWrongType)
 		}
 	}
 
 	return wrappers, options, actions
+}
+
+func validate(fullValue interface{}, value interface{}, args ...interface{}) ErrorList {
+	var errs ErrorList
+	wrappers, options, actions := prepareRules(args...)
+
+	for _, action := range actions {
+		value = action(value)
+	}
+
+	reflectedValue := valueOf(value)
+
+	if options.Has(Ignore) {
+		return ErrorList{}
+	}
+
+	if options.Has(Required) == false {
+		if empty(reflectedValue, OptionList{}) == nil {
+			return ErrorList{}
+		}
+	}
+
+	for _, wrapper := range wrappers {
+		var err error
+		if wrapper.Reflected {
+			err = wrapper.Function(reflectedValue, options, wrapper.Params)
+		} else {
+			err = wrapper.Function(fullValue, options, wrapper.Params)
+		}
+		if err != nil {
+			errs = append(errs, err)
+			if options.Has(Lazy) {
+				return errs
+			}
+		}
+	}
+
+	return errs
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -19,50 +20,53 @@ type Validator func(interface{}, OptionList, ...interface{}) error
 // Custom validation functions map
 type ValidatorMap map[string]Validator
 
+type DatePlaceholder string
+
 // List of build-in validators
 var validators = map[string]Validator{
-	"empty":          Empty,
-	"email":          Email,
-	"url":            URL,
-	"accepted":       Accepted,
-	"alpha":          Alpha,
-	"alpha_under":    AlphaUnder,
-	"alpha_dash":     AlphaDash,
-	"ascii":          ASCII,
-	"int":            Int,
-	"float":          Float,
-	"json":           JSON,
-	"ip":             Ip,
-	"ipv4":           Ipv4,
-	"ipv6":           Ipv6,
-	"time":           Time,
-	"upper_case":     UpperCase,
-	"lower_case":     LowerCase,
-	"country_code2":  CountryCode2,
-	"country_code3":  CountryCode3,
-	"currency_code":  CurrencyCode,
-	"language_code2": LanguageCode2,
-	"language_code3": LanguageCode3,
-	"credit_card":    CreditCard,
-	"password":       Password,
+	"empty":          empty,
+	"email":          email,
+	"url":            urlv,
+	"accepted":       accepted,
+	"alpha":          alpha,
+	"alpha_under":    alphaUnder,
+	"alpha_dash":     alphaDash,
+	"ascii":          ascii,
+	"int":            intv,
+	"float":          float,
+	"json":           jsonv,
+	"ip":             ip,
+	"ipv4":           ipv4,
+	"ipv6":           ipv6,
+	"time":           timev,
+	"upper_case":     upperCase,
+	"lower_case":     lowerCase,
+	"country_code2":  countryCode2,
+	"country_code3":  countryCode3,
+	"currency_code":  currencyCode,
+	"language_code2": languageCode2,
+	"language_code3": languageCode3,
+	"credit_card":    creditCard,
+	"password":       password,
 	"min":            min,
-	"max":            Max,
-	"len":            Len,
-	"in":             In,
-	"not_in":         NotIn,
-	"date":           Date,
-	"regex":          Regex,
-	"contains":       Contains,
-	"gt":             Gt,
-	"lt":             Lt,
-	"date_gte":       DateGte,
-	"date_lte":       DateLte,
-	"date_gt":        DateGt,
-	"date_lt":        DateLt,
-	"has_prefix":     HasPrefix,
-	"has_suffix":     HasSuffix,
-	"has_keys":       HasKeys,
-	"has_only_keys":  HasOnlyKeys,
+	"max":            max,
+	"len":            lenv,
+	"in":             inv,
+	"not_in":         notIn,
+	"date":           date,
+	"regex":          regex,
+	"contains":       contains,
+	"gt":             gt,
+	"lt":             lt,
+	"date_gte":       dateGte,
+	"date_lte":       dateLte,
+	"date_gt":        dateGt,
+	"date_lt":        dateLt,
+	"has_prefix":     hasPrefix,
+	"has_suffix":     hasSuffix,
+	"has_keys":       hasKeys,
+	"has_only_keys":  hasOnlyKeys,
+	"file_exists":    FileExists,
 }
 
 // Map of custom validation functions
@@ -107,7 +111,7 @@ func (v ValidatorMap) Has(name string) bool {
 // Integer, float values must be greater than zero
 // Value kind: String, Array, Slice, Map, Number types, Interface, Pointer
 // It ignore another types
-func Empty(value interface{}, options OptionList, params ...interface{}) error {
+func empty(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
 		if val.Len() != 0 {
@@ -131,14 +135,14 @@ func Empty(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be a valid email address
 // Value kind: String
 // It panics if another types given
-func Email(value interface{}, options OptionList, params ...interface{}) error {
+func email(value interface{}, options OptionList, params ...interface{}) error {
 	return regexValidator(regexEmail, "email", value.(reflect.Value))
 }
 
 // Value must be a valid URL address
 // Value kind: String
 // It panics if another types given
-func URL(value interface{}, options OptionList, params ...interface{}) error {
+func urlv(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.String:
 		u, err := url.ParseRequestURI(val.String())
@@ -154,11 +158,11 @@ func URL(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be in "yes", "on", "1", "y", "true"
 // Value kind: String
 // It panics if another types given
-func Accepted(value interface{}, options OptionList, params ...interface{}) error {
+func accepted(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.String:
 		allowed := []interface{}{"yes", "on", "1", "y", "true"}
-		if err := In(value, options, allowed...); err != nil {
+		if err := inv(value, options, allowed...); err != nil {
 			return errorMessage("accepted")
 		}
 	default:
@@ -182,7 +186,7 @@ func min(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be less or equal than max
 // Value kind: String, Array, Slice, Map, Number types
 // It panics if another types given
-func Max(value interface{}, options OptionList, params ...interface{}) error {
+func max(value interface{}, options OptionList, params ...interface{}) error {
 	max, _ := parseFloat(params[0])
 	val := size(value.(reflect.Value))
 	if val > max {
@@ -194,7 +198,7 @@ func Max(value interface{}, options OptionList, params ...interface{}) error {
 // Value must has specified length
 // Value kind: String, Array, Slice, Map
 // It panics if another types given
-func Len(value interface{}, options OptionList, params ...interface{}) error {
+func lenv(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map:
 		length, _ := parseFloat(params[0])
@@ -210,7 +214,7 @@ func Len(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be in the specified list
 // Value kind: String, Number types
 // It panics if another types given
-func In(value interface{}, options OptionList, params ...interface{}) error {
+func inv(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.String:
 		v := val.String()
@@ -239,8 +243,8 @@ func In(value interface{}, options OptionList, params ...interface{}) error {
 // Value must not be in specified list
 // Value kind: String, Number types
 // It panics if another types given
-func NotIn(value interface{}, options OptionList, params ...interface{}) error {
-	if err := In(value, options, params...); err == nil {
+func notIn(value interface{}, options OptionList, params ...interface{}) error {
+	if err := inv(value, options, params...); err == nil {
 		return errorMessage("not_in", params...)
 	}
 	return nil
@@ -249,7 +253,7 @@ func NotIn(value interface{}, options OptionList, params ...interface{}) error {
 // String must be begins with specified string
 // Value kind: String
 // It panics if another types given
-func HasPrefix(value interface{}, options OptionList, params ...interface{}) error {
+func hasPrefix(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return strings.HasPrefix(value.String(), params[0].(string))
 	}
@@ -259,7 +263,7 @@ func HasPrefix(value interface{}, options OptionList, params ...interface{}) err
 // Value must be ends with specified string
 // Value kind: String
 // It panics if another types given
-func HasSuffix(value interface{}, options OptionList, params ...interface{}) error {
+func hasSuffix(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return strings.HasSuffix(value.String(), params[0].(string))
 	}
@@ -269,7 +273,7 @@ func HasSuffix(value interface{}, options OptionList, params ...interface{}) err
 // Value must be matching a specified pattern.
 // Value kind: String
 // It panics if another types given
-func Regex(value interface{}, options OptionList, params ...interface{}) error {
+func regex(value interface{}, options OptionList, params ...interface{}) error {
 	regex, err := regexp.Compile(params[0].(string))
 	if err != nil {
 		panic(err)
@@ -280,7 +284,7 @@ func Regex(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be contains only english letters (pattern: ^[a-zA-Z]+$).
 // Value kind: String
 // It panics if another types given
-func Alpha(value interface{}, options OptionList, params ...interface{}) error {
+func alpha(value interface{}, options OptionList, params ...interface{}) error {
 	return regexValidator(regexAlpha, "alpha", value.(reflect.Value))
 }
 
@@ -294,21 +298,21 @@ func AlphaNumeric(value interface{}, options OptionList, params ...interface{}) 
 // Value must be contains only english letters and underscores (pattern: ^[a-zA-Z_]+$).
 // Value kind: String
 // It panics if another types given
-func AlphaUnder(value interface{}, options OptionList, params ...interface{}) error {
+func alphaUnder(value interface{}, options OptionList, params ...interface{}) error {
 	return regexValidator(regexAlphaUnder, "alpha_under", value.(reflect.Value))
 }
 
 // Value must be contains only english letters and dashes (pattern: ^[a-zA-Z-]+$).
 // Value kind: String
 // It panics if another types given
-func AlphaDash(value interface{}, options OptionList, params ...interface{}) error {
+func alphaDash(value interface{}, options OptionList, params ...interface{}) error {
 	return regexValidator(regexAlphaDash, "alpha_dash", value.(reflect.Value))
 }
 
 // Value must be contain only ASCII characters
 // Value kind: String
 // It panics if another types given
-func ASCII(value interface{}, options OptionList, params ...interface{}) error {
+func ascii(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		if value.Len() == 0 {
 			return false
@@ -327,21 +331,21 @@ func ASCII(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be contains only digits (pattern: ^[-+]?[0-9]+$).
 // Value kind: String
 // It panics if another types given
-func Int(value interface{}, options OptionList, params ...interface{}) error {
+func intv(value interface{}, options OptionList, params ...interface{}) error {
 	return regexValidator(regexInt, "int", value.(reflect.Value))
 }
 
 // Value must be contains only float number (pattern: ^[0-9]+\.[0-9]+$).
 // Value kind: String
 // It panics if another types given
-func Float(value interface{}, options OptionList, params ...interface{}) error {
+func float(value interface{}, options OptionList, params ...interface{}) error {
 	return regexValidator(regexFloat, "float", value.(reflect.Value))
 }
 
 // Value must be a valid JSON.
 // Value kind: String
 // It panics if another types given
-func JSON(value interface{}, options OptionList, params ...interface{}) error {
+func jsonv(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		var j json.RawMessage
 		return json.Unmarshal([]byte(value.String()), &j) == nil
@@ -352,7 +356,7 @@ func JSON(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be a valid v4 or v6 IP address
 // Value kind: String
 // It panics if another types given
-func Ip(value interface{}, options OptionList, params ...interface{}) error {
+func ip(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		ip := net.ParseIP(value.String())
 		return ip != nil
@@ -363,7 +367,7 @@ func Ip(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be a valid IP v4 address
 // Value kind: String
 // It panics if another types given
-func Ipv4(value interface{}, options OptionList, params ...interface{}) error {
+func ipv4(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		ip := net.ParseIP(value.String())
 		return ip != nil && ip.To4() != nil
@@ -374,7 +378,7 @@ func Ipv4(value interface{}, options OptionList, params ...interface{}) error {
 // Value must a valid Ip v6 address
 // Value kind: String
 // It panics if another types given
-func Ipv6(value interface{}, options OptionList, params ...interface{}) error {
+func ipv6(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		ip := net.ParseIP(value.String())
 		return ip != nil && ip.To4() == nil
@@ -385,7 +389,7 @@ func Ipv6(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be contains specified string
 // Value kind: String
 // It panics if another types given
-func Contains(value interface{}, options OptionList, params ...interface{}) error {
+func contains(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return strings.Contains(value.String(), params[0].(string))
 	}
@@ -397,7 +401,7 @@ func Contains(value interface{}, options OptionList, params ...interface{}) erro
 // String, Slice, Array, Maps are compared by length
 // Value kind: Number, String, Slice, Array, Map
 // It panics if another types given
-func Gt(value interface{}, options OptionList, params ...interface{}) error {
+func gt(value interface{}, options OptionList, params ...interface{}) error {
 	valueSize := size(value.(reflect.Value))
 	paramSize, _ := parseFloat(params[0])
 	if valueSize <= paramSize {
@@ -411,7 +415,7 @@ func Gt(value interface{}, options OptionList, params ...interface{}) error {
 // String, Slice, Array, Maps are compared by length
 // Value kind: Number, String, Slice, Array, Map
 // It panics if another types given
-func Lt(value interface{}, options OptionList, params ...interface{}) error {
+func lt(value interface{}, options OptionList, params ...interface{}) error {
 	valueSize := size(value.(reflect.Value))
 	paramSize, _ := parseFloat(params[0])
 	if valueSize >= paramSize {
@@ -424,7 +428,7 @@ func Lt(value interface{}, options OptionList, params ...interface{}) error {
 // Only string keys supported
 // Value kind: Map
 // It panics if another types given
-func HasKeys(value interface{}, options OptionList, params ...interface{}) error {
+func hasKeys(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.Map:
 		if val.Len() < len(params) {
@@ -453,13 +457,13 @@ func HasKeys(value interface{}, options OptionList, params ...interface{}) error
 // Only string keys supported
 // Value kind: Map
 // It panics if another types given
-func HasOnlyKeys(value interface{}, options OptionList, params ...interface{}) error {
+func hasOnlyKeys(value interface{}, options OptionList, params ...interface{}) error {
 	switch val := value.(reflect.Value); val.Kind() {
 	case reflect.Map:
 		if val.Len() != len(params) {
 			return errorMessage("has_only_keys", params...)
 		}
-		if err := HasKeys(value, options, params...); err != nil {
+		if err := hasKeys(value, options, params...); err != nil {
 			return errorMessage("has_only_keys", params...)
 		}
 	default:
@@ -471,7 +475,7 @@ func HasOnlyKeys(value interface{}, options OptionList, params ...interface{}) e
 // Value must be a valid time in format 15:04:05
 // Value kind: String
 // It panics if another types given
-func Time(value interface{}, options OptionList, params ...interface{}) error {
+func timev(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		_, err := time.Parse("15:04:05", value.String())
 		return err == nil
@@ -482,7 +486,7 @@ func Time(value interface{}, options OptionList, params ...interface{}) error {
 // Value must be in upper case
 // Value kind: String
 // It panics if another types given
-func UpperCase(value interface{}, options OptionList, params ...interface{}) error {
+func upperCase(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		s := value.String()
 		return s == strings.ToUpper(s)
@@ -493,7 +497,7 @@ func UpperCase(value interface{}, options OptionList, params ...interface{}) err
 // Value must be in lower case
 // Value kind: String
 // It panics if another types given
-func LowerCase(value interface{}, options OptionList, params ...interface{}) error {
+func lowerCase(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		s := value.String()
 		return s == strings.ToLower(s)
@@ -504,7 +508,7 @@ func LowerCase(value interface{}, options OptionList, params ...interface{}) err
 // Value must contains at least english letters in both cases, numbers and have minimum length 8
 // Value kind: String
 // It panics if another types given
-func Password(value interface{}, options OptionList, params ...interface{}) error {
+func password(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		if value.Len() < 8 {
 			return false
@@ -528,7 +532,7 @@ func Password(value interface{}, options OptionList, params ...interface{}) erro
 }
 
 // Value must be fit to the specified layout
-func Date(value interface{}, options OptionList, params ...interface{}) error {
+func date(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		_, err := time.Parse(params[0].(string), value.String())
 		return err == nil
@@ -537,7 +541,7 @@ func Date(value interface{}, options OptionList, params ...interface{}) error {
 }
 
 // Value must be a valid date and greater or equal specified
-func DateGte(value interface{}, options OptionList, params ...interface{}) error {
+func dateGte(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return dateComparison(value.String(), params, "gte")
 	}
@@ -545,7 +549,7 @@ func DateGte(value interface{}, options OptionList, params ...interface{}) error
 }
 
 // Value must be a valid date and lower or equal specified
-func DateLte(value interface{}, options OptionList, params ...interface{}) error {
+func dateLte(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return dateComparison(value.String(), params, "lte")
 	}
@@ -553,7 +557,7 @@ func DateLte(value interface{}, options OptionList, params ...interface{}) error
 }
 
 // Value must be a valid date and greater than specified
-func DateGt(value interface{}, options OptionList, params ...interface{}) error {
+func dateGt(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return dateComparison(value.String(), params, "gt")
 	}
@@ -561,7 +565,7 @@ func DateGt(value interface{}, options OptionList, params ...interface{}) error 
 }
 
 // Value must be a valid date and lower than specified
-func DateLt(value interface{}, options OptionList, params ...interface{}) error {
+func dateLt(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return dateComparison(value.String(), params, "lt")
 	}
@@ -569,33 +573,33 @@ func DateLt(value interface{}, options OptionList, params ...interface{}) error 
 }
 
 // Value must be a valid country code in ISO2 format
-func CountryCode2(value interface{}, options OptionList, params ...interface{}) error {
+func countryCode2(value interface{}, options OptionList, params ...interface{}) error {
 	return codeValidator("country_code2", value.(reflect.Value), 2, CountryCodes2)
 }
 
 // Value must be a valid country code in ISO3 format
-func CountryCode3(value interface{}, options OptionList, params ...interface{}) error {
+func countryCode3(value interface{}, options OptionList, params ...interface{}) error {
 	return codeValidator("country_code3", value.(reflect.Value), 3, CountryCodes3)
 }
 
 // Value must be a valid currency code
-func CurrencyCode(value interface{}, options OptionList, params ...interface{}) error {
+func currencyCode(value interface{}, options OptionList, params ...interface{}) error {
 	return codeValidator("currency_code", value.(reflect.Value), 3, CurrencyCodes)
 }
 
 // Value must be a valid language code in ISO2 format
-func LanguageCode2(value interface{}, options OptionList, params ...interface{}) error {
+func languageCode2(value interface{}, options OptionList, params ...interface{}) error {
 	return codeValidator("language_code2", value.(reflect.Value), 2, LanguageCodes2)
 }
 
 // Value must be a valid language code in ISO3 format
-func LanguageCode3(value interface{}, options OptionList, params ...interface{}) error {
+func languageCode3(value interface{}, options OptionList, params ...interface{}) error {
 	return codeValidator("language_code3", value.(reflect.Value), 3, LanguageCodes3)
 }
 
 // Value must be a valid credit card number
 // It uses luhn algorithm
-func CreditCard(value interface{}, options OptionList, params ...interface{}) error {
+func creditCard(value interface{}, options OptionList, params ...interface{}) error {
 	fn := func(value reflect.Value, params []interface{}) bool {
 		return luhn(value.String())
 	}
@@ -603,7 +607,11 @@ func CreditCard(value interface{}, options OptionList, params ...interface{}) er
 }
 
 func FileExists(value interface{}, options OptionList, params ...interface{}) error {
-	return nil
+	fn := func(value reflect.Value, params []interface{}) bool {
+		_, err := os.Stat(value.String())
+		return os.IsExist(err)
+	}
+	return stringValidator("credit_card", value.(reflect.Value), params, fn)
 }
 
 // Helper for creating validators what check string codes

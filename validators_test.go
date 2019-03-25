@@ -31,7 +31,7 @@ func TestEmpty(t *testing.T) {
 		{Value: "abc", IsValid: false},
 	}
 
-	testItems(t, Empty, items)
+	testItems(t, empty, items)
 }
 
 func TestEmail(t *testing.T) {
@@ -45,7 +45,7 @@ func TestEmail(t *testing.T) {
 		{Value: "", IsValid: false},
 	}
 
-	testItems(t, Email, items)
+	testItems(t, email, items)
 }
 
 func TestURL(t *testing.T) {
@@ -61,7 +61,7 @@ func TestURL(t *testing.T) {
 		{Value: "", IsValid: false},
 	}
 
-	testItems(t, URL, items)
+	testItems(t, urlv, items)
 }
 
 func TestAccepted(t *testing.T) {
@@ -75,7 +75,7 @@ func TestAccepted(t *testing.T) {
 		{Value: "off", IsValid: false},
 	}
 
-	testItems(t, Accepted, items)
+	testItems(t, accepted, items)
 }
 
 func TestMin(t *testing.T) {
@@ -103,7 +103,7 @@ func TestMax(t *testing.T) {
 		{Value: stringT("string str"), Params: []interface{}{"3"}, IsValid: false},
 	}
 
-	testItems(t, Max, items)
+	testItems(t, max, items)
 }
 
 func TestLen(t *testing.T) {
@@ -113,7 +113,7 @@ func TestLen(t *testing.T) {
 		{Value: [2]int{1, 2}, Params: []interface{}{9}, IsValid: false},
 	}
 
-	testItems(t, Len, items)
+	testItems(t, lenv, items)
 }
 
 func TestIn(t *testing.T) {
@@ -127,7 +127,7 @@ func TestIn(t *testing.T) {
 		{Value: 2.0, Params: []interface{}{1, 2, 3}, IsValid: true},
 	}
 
-	testItems(t, In, items)
+	testItems(t, inv, items)
 }
 
 func TestNotIn(t *testing.T) {
@@ -138,7 +138,7 @@ func TestNotIn(t *testing.T) {
 		{Value: 3, Params: []interface{}{1, 2}, IsValid: true},
 	}
 
-	testItems(t, NotIn, items)
+	testItems(t, notIn, items)
 }
 
 func TestHasPrefix(t *testing.T) {
@@ -148,7 +148,7 @@ func TestHasPrefix(t *testing.T) {
 		{Value: "prepare", Params: []interface{}{"pres"}, IsValid: false},
 	}
 
-	testItems(t, HasPrefix, items)
+	testItems(t, hasPrefix, items)
 }
 
 func TestHasSuffix(t *testing.T) {
@@ -158,7 +158,7 @@ func TestHasSuffix(t *testing.T) {
 		{Value: "prepare", Params: []interface{}{"ares"}, IsValid: false},
 	}
 
-	testItems(t, HasSuffix, items)
+	testItems(t, hasSuffix, items)
 }
 
 func TestRegex(t *testing.T) {
@@ -168,7 +168,7 @@ func TestRegex(t *testing.T) {
 		{Value: "YES", Params: []interface{}{"yes"}, IsValid: false},
 	}
 
-	testItems(t, Regex, items)
+	testItems(t, regex, items)
 }
 
 func TestAlpha(t *testing.T) {
@@ -183,7 +183,7 @@ func TestAlpha(t *testing.T) {
 		{Value: "123", IsValid: false},
 	}
 
-	testItems(t, Alpha, items)
+	testItems(t, alpha, items)
 }
 
 func TestAlphaNumeric(t *testing.T) {
@@ -210,7 +210,7 @@ func TestAlphaUnder(t *testing.T) {
 		{Value: "--abc_", IsValid: false},
 	}
 
-	testItems(t, AlphaUnder, items)
+	testItems(t, alphaUnder, items)
 }
 
 func TestAlphaDash(t *testing.T) {
@@ -225,7 +225,7 @@ func TestAlphaDash(t *testing.T) {
 		{Value: "--abc_", IsValid: false},
 	}
 
-	testItems(t, AlphaDash, items)
+	testItems(t, alphaDash, items)
 }
 
 func TestASCII(t *testing.T) {
@@ -236,7 +236,7 @@ func TestASCII(t *testing.T) {
 		{Value: "호랑이", IsValid: false},
 	}
 
-	testItems(t, ASCII, items)
+	testItems(t, ascii, items)
 }
 
 func TestInt(t *testing.T) {
@@ -249,7 +249,7 @@ func TestInt(t *testing.T) {
 		{Value: "1,5", IsValid: false},
 	}
 
-	testItems(t, Int, items)
+	testItems(t, intv, items)
 }
 
 func TestFloat(t *testing.T) {
@@ -261,7 +261,7 @@ func TestFloat(t *testing.T) {
 		{Value: "1,5", IsValid: false},
 	}
 
-	testItems(t, Float, items)
+	testItems(t, float, items)
 }
 
 func TestJSON(t *testing.T) {
@@ -276,7 +276,7 @@ func TestJSON(t *testing.T) {
 		{Value: "{\"string\"}", IsValid: false},
 	}
 
-	testItems(t, JSON, items)
+	testItems(t, jsonv, items)
 }
 
 func TestIp(t *testing.T) {
@@ -289,7 +289,7 @@ func TestIp(t *testing.T) {
 		{Value: "123.456", IsValid: false},
 	}
 
-	testItems(t, Ip, items)
+	testItems(t, ip, items)
 }
 
 func TestIpv4(t *testing.T) {
@@ -303,7 +303,7 @@ func TestIpv4(t *testing.T) {
 		{Value: "123.456", IsValid: false},
 	}
 
-	testItems(t, Ipv4, items)
+	testItems(t, ipv4, items)
 }
 
 func TestIpv6(t *testing.T) {
@@ -319,7 +319,7 @@ func TestIpv6(t *testing.T) {
 		{Value: "123.456", IsValid: false},
 	}
 
-	testItems(t, Ipv6, items)
+	testItems(t, ipv6, items)
 }
 
 func TestContains(t *testing.T) {
@@ -334,7 +334,7 @@ func TestContains(t *testing.T) {
 		{Value: "Prepare", Params: []interface{}{"pre"}, IsValid: false},
 	}
 
-	testItems(t, Contains, items)
+	testItems(t, contains, items)
 }
 
 func TestGt(t *testing.T) {
@@ -348,7 +348,7 @@ func TestGt(t *testing.T) {
 		{Value: 5, Params: []interface{}{20}, IsValid: false},
 	}
 
-	testItems(t, Gt, items)
+	testItems(t, gt, items)
 }
 
 func TestLt(t *testing.T) {
@@ -362,7 +362,7 @@ func TestLt(t *testing.T) {
 		{Value: 50, Params: []interface{}{20}, IsValid: false},
 	}
 
-	testItems(t, Lt, items)
+	testItems(t, lt, items)
 }
 
 func TestHasKeys(t *testing.T) {
@@ -379,7 +379,7 @@ func TestHasKeys(t *testing.T) {
 		{Value: m, Params: []interface{}{""}, IsValid: false},
 	}
 
-	testItems(t, HasKeys, items)
+	testItems(t, hasKeys, items)
 }
 
 func TestHasOnlyKeys(t *testing.T) {
@@ -397,7 +397,7 @@ func TestHasOnlyKeys(t *testing.T) {
 		{Value: m, Params: []interface{}{""}, IsValid: false},
 	}
 
-	testItems(t, HasOnlyKeys, items)
+	testItems(t, hasOnlyKeys, items)
 }
 
 func TestTime(t *testing.T) {
@@ -410,7 +410,7 @@ func TestTime(t *testing.T) {
 		{Value: "12:00", IsValid: false},
 	}
 
-	testItems(t, Time, items)
+	testItems(t, timev, items)
 }
 
 func TestUpperCase(t *testing.T) {
@@ -425,7 +425,7 @@ func TestUpperCase(t *testing.T) {
 		{Value: "abcABC", IsValid: false},
 	}
 
-	testItems(t, UpperCase, items)
+	testItems(t, upperCase, items)
 }
 
 func TestLowerCase(t *testing.T) {
@@ -440,7 +440,7 @@ func TestLowerCase(t *testing.T) {
 		{Value: "abcABC", IsValid: false},
 	}
 
-	testItems(t, LowerCase, items)
+	testItems(t, lowerCase, items)
 }
 
 func TestPassword(t *testing.T) {
@@ -453,7 +453,7 @@ func TestPassword(t *testing.T) {
 		{Value: "SDFSFKLSFLSF123123", IsValid: false},
 	}
 
-	testItems(t, Password, items)
+	testItems(t, password, items)
 }
 
 func TestDate(t *testing.T) {
@@ -463,7 +463,7 @@ func TestDate(t *testing.T) {
 		{Value: "fake str", Params: []interface{}{"02-01-2006"}, IsValid: false},
 	}
 
-	testItems(t, Date, items)
+	testItems(t, date, items)
 }
 
 func TestDateGte(t *testing.T) {
@@ -479,7 +479,7 @@ func TestDateGte(t *testing.T) {
 		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	testItems(t, DateGte, items)
+	testItems(t, dateGte, items)
 }
 
 func TestDateLte(t *testing.T) {
@@ -495,7 +495,7 @@ func TestDateLte(t *testing.T) {
 		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	testItems(t, DateLte, items)
+	testItems(t, dateLte, items)
 }
 
 func TestDateGt(t *testing.T) {
@@ -509,7 +509,7 @@ func TestDateGt(t *testing.T) {
 		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	testItems(t, DateGt, items)
+	testItems(t, dateGt, items)
 }
 
 func TestDateLt(t *testing.T) {
@@ -523,7 +523,7 @@ func TestDateLt(t *testing.T) {
 		{Value: "fake str", Params: []interface{}{"02-01-2006", "02-12-2019"}, IsValid: false},
 	}
 
-	testItems(t, DateLt, items)
+	testItems(t, dateLt, items)
 }
 
 func TestCountryCode2(t *testing.T) {
@@ -534,7 +534,7 @@ func TestCountryCode2(t *testing.T) {
 		{Value: "RUS", IsValid: false},
 	}
 
-	testItems(t, CountryCode2, items)
+	testItems(t, countryCode2, items)
 }
 
 func TestCountryCode3(t *testing.T) {
@@ -546,7 +546,7 @@ func TestCountryCode3(t *testing.T) {
 		{Value: "ZUZ", IsValid: false},
 	}
 
-	testItems(t, CountryCode3, items)
+	testItems(t, countryCode3, items)
 }
 
 func TestCurrencyCode(t *testing.T) {
@@ -556,7 +556,7 @@ func TestCurrencyCode(t *testing.T) {
 		{Value: "RU", IsValid: false},
 	}
 
-	testItems(t, CurrencyCode, items)
+	testItems(t, currencyCode, items)
 }
 
 func TestLanguageCode2(t *testing.T) {
@@ -568,7 +568,7 @@ func TestLanguageCode2(t *testing.T) {
 		{Value: "ZUZ", IsValid: false},
 	}
 
-	testItems(t, LanguageCode2, items)
+	testItems(t, languageCode2, items)
 }
 
 func TestLanguageCode3(t *testing.T) {
@@ -578,7 +578,7 @@ func TestLanguageCode3(t *testing.T) {
 		{Value: "ru", IsValid: false},
 	}
 
-	testItems(t, LanguageCode3, items)
+	testItems(t, languageCode3, items)
 }
 
 func TestCreditCard(t *testing.T) {
@@ -598,7 +598,7 @@ func TestCreditCard(t *testing.T) {
 		{Value: "4111 1111 1111 1111 1111 1111 1111 1111", IsValid: false},
 	}
 
-	testItems(t, CreditCard, items)
+	testItems(t, creditCard, items)
 }
 
 func testItems(t *testing.T, fn Validator, items []testItem) {

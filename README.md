@@ -1,5 +1,18 @@
-GO validation package
+GO validation package - !!!Alpha version!!!
 ==================================================
+
+The main features of this package:
++ Simple and flexible API
++ Many date validators with custom intervals (+1 year, - 1 month, etc)
++ Implemented all common validators
++ Custom validators support
++ Error messages API with custom messages with params
++ Options - "required", "lazy", etc. With custom options support
+- Actions - "trim", "lower", etc. With custom actions support
+
+Scheduled features:
+- ...
+
 Quick examples:
 
 You can use structure tags to specify validators...

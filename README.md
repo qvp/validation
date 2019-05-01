@@ -1,4 +1,4 @@
-GO validation package - !!!Alpha version!!!
+GO validation package (alpha version)
 ==================================================
 
 #### The main features of this package:
@@ -8,7 +8,7 @@ GO validation package - !!!Alpha version!!!
 + Custom validators support
 + Error messages API with custom messages with params
 + Options - "required", "lazy", etc. With custom options support
-- Actions - "trim", "lower", etc. With custom actions support
++ Actions - "trim", "lower", etc. With custom actions support
 
 #### Scheduled features:
 - Compare validator

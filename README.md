@@ -1,7 +1,7 @@
 GO validation package - !!!Alpha version!!!
 ==================================================
 
-The main features of this package:
+#### The main features of this package:
 + Simple and flexible API
 + Many date validators with custom intervals (+1 year, - 1 month, etc)
 + Implemented all common validators
@@ -10,10 +10,16 @@ The main features of this package:
 + Options - "required", "lazy", etc. With custom options support
 - Actions - "trim", "lower", etc. With custom actions support
 
-Scheduled features:
-- ...
+#### Scheduled features:
+- Compare validator
+- Embedded parameters
+- Options "required_with", "required_unless"
+- Embedded structs support
+- Folding structs support
+- JSON tag support
+- Functions for testing validation rules
 
-Quick examples:
+#### Quick examples:
 
 You can use structure tags to specify validators...
 ```

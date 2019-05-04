@@ -35,6 +35,22 @@ notValidUser := User{}
 errors := validation.ValidateStruct(notValidUser, "valid|on_create")
 
 fmt.Println(errors.JSON())
+
+{
+    "Name":[
+        "must be greater or equal of 2",
+        "message from custom validator"
+    ],
+    "Email":[
+        "must be a valid email address"
+    ],
+    "Password":[
+        "must contains at least english letters in both cases, numbers and have minimum length 8"
+    ],
+    "Birthday":[
+        "must be greater or equal of now -18Y"
+    ]
+}
 ```
 
 Or you can validate structure in functional way...

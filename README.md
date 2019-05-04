@@ -4,6 +4,7 @@ GO validation package (alpha version)
 #### The main features of this package:
 + Simple and flexible API
 + Many date validators with custom intervals (+1 year, - 1 month, etc)
++ Can validate custom types without any special code
 + Implemented all common validators
 + Custom validators support
 + Error messages API with custom messages with params
@@ -22,7 +23,7 @@ GO validation package (alpha version)
 #### Quick examples:
 
 You can use structure tags to specify validators...
-```
+```go
 type User struct {
 	Name           string `valid:"required|min:2|max:100|custom_validator"`
 	Email          string `valid:"required|email"            on_update:"ignore"`
@@ -32,10 +33,16 @@ type User struct {
 }
 
 notValidUser := User{}
-errors := validation.ValidateStruct(notValidUser, "valid|on_create")
+errors := validation.ValidateStruct(notValidUser, "valid", "on_create")
 
-fmt.Println(errors.JSON())
+// Check if has errors
+if errors.Empty() {
+    // do somthing
+} else {
+    fmt.Println(errors.JSON())
+}
 
+// JSON representation of struct's errors
 {
     "Name":[
         "must be greater or equal of 2",
@@ -66,11 +73,11 @@ type User struct {
 
 func (u User) isValid() validation.ErrorMap {
 	return validation.ErrorMap{
-		"Name": validation.ValidateValue(u.Name, is.Required(), is.Min(2), is.Max(100), CustomValidator),
+	        "Name": validation.ValidateValue(u.Name, is.Required(), is.Min(2), is.Max(100), CustomValidator),
 		"Email": validation.ValidateValue(u.Email, is.Required(), is.Email()),
 		"Password": validation.ValidateValue(u.Password, is.Password()),
-    "PasswordRepeat": validation.ValidateValue(u.PasswordRepeat, is.Compare("Password")),
-    "Birthday": validation.ValidateValue(u.Birthday, is.DateGte("02-01-2006", "-18Y")),
+                "PasswordRepeat": validation.ValidateValue(u.PasswordRepeat, is.Compare("Password")),
+                "Birthday": validation.ValidateValue(u.Birthday, is.DateGte("02-01-2006", "-18Y")),
 	}
 }
 ```

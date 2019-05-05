@@ -4,6 +4,7 @@ GO validation package (alpha version)
 + [Quick examples](#quick-examples)
 + [Installation](#instalation)
 + [Validate Struct](#validate-struct)
++ [Validate single value](#validate-single-value)
 + [Create custom validators](#create-custom-validators)
 
 ## The main features of this package:
@@ -96,7 +97,7 @@ go get github.com/qvp/validation/is
 ```
 
 ## Validate Struct
-validation.ValidateStruct method is used to validate the structure. Еhe first argument is a structure, and all subsequent arguments are tag names, the rules of which will be used for validation. Multiple tag support for different validation scenarios. This is especially useful when validating web forms, when updating some fields are not needed, etc.
+validation.ValidateStruct method is used to validate the structure. The first argument is a structure, and all subsequent arguments are tag names, the rules of which will be used for validation. Multiple tag support for different validation scenarios. This is especially useful when validating web forms, when updating some fields are not needed, etc.
 ```go
 // On update scenario email will be ignored
 // On create scenario password will be required
@@ -104,6 +105,18 @@ type User struct {
     Email          string `valid:"required|email" on_update:"ignore"`
     Password       string `valid:"password"       on_create:"required"`
 }
+
+errors := validation.ValidateStruct(User{}) // used only default tag "valid"
+errors := validation.ValidateStruct(User{}, "valid", "on_create")
+```
+
+## Validate single value
+validation.ValidateValue method is used to validate the single value. The first argument is a value, and all subsequent arguments are validation rules and/or custom validation faunctions.
+```go
+errors := validation.ValidateValue("w", "required|in:x,y,z", CustomValidator)
+fmt.Println(errors.JSON())
+// JSON representation of ValidateValue's errors it is a list of errors
+["must be in x,y,z", "message from custom validator"]
 ```
 
 ## Create custom validators

@@ -3,7 +3,7 @@ GO validation package (alpha version)
 
 + [Quick examples](#quick-examples)
 + [Installation](#instalation)
-+ [Validate Struct](#validate-structs)
++ [Validate Struct](#validate-struct)
 + [Create custom validators](#create-custom-validators)
 
 ## The main features of this package:

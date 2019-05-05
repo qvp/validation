@@ -1,10 +1,10 @@
 GO validation package (alpha version)
 ==================================================
 
-+ [Quick examples](https://github.com/qvp/validation#quick-examples)
-+ [Installation](https://github.com/qvp/validation#instalation)
-+ [Validate Struct](https://github.com/qvp/validation#validate-structs)
-+ [Create custom validators](https://github.com/qvp/validation#create-custom-validators)
++ [Quick examples](#quick-examples)
++ [Installation](#instalation)
++ [Validate Struct](#validate-structs)
++ [Create custom validators](#create-custom-validators)
 
 ## The main features of this package:
 + Simple and flexible API

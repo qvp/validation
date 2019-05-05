@@ -62,7 +62,7 @@ if errors.Empty() {
 
 Or you can validate structure in functional way...
 
-```
+```go
 type User struct {
     Name           string
     Email          string
@@ -76,7 +76,6 @@ func (u User) isValid() validation.ErrorMap {
         "Name": validation.ValidateValue(u.Name, is.Required(), is.Min(2), is.Max(100), CustomValidator),
 	"Email": validation.ValidateValue(u.Email, is.Required(), is.Email()),
 	"Password": validation.ValidateValue(u.Password, is.Password()),
-        "PasswordRepeat": validation.ValidateValue(u.PasswordRepeat, is.Compare("Password")),
         "Birthday": validation.ValidateValue(u.Birthday, is.DateGte("02-01-2006", "-18Y")),
     }
 }
